@@ -1,3 +1,5 @@
+![Image](https://github.com/user-attachments/assets/6bae8406-3f7b-4dc9-bbaf-279f2be0b63e)
+
 # OTPIQ Laravel Package
 
 ![Packagist License](https://img.shields.io/packagist/l/rstacode/otpiq)
