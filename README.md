@@ -9,7 +9,15 @@
 
 A Laravel package for seamless integration with the OTPIQ SMS service API. Send verification codes and custom messages via SMS, WhatsApp, or Telegram with ease.
 
+## [- Official Website](https://otpiq.com/)
+
+## [- Live Demo](https://otpiq.rstacode.dev)
+
+## [- Source Code Live Demo](https://github.com/Rstacode/otpiq_demo)
+
 ## Features
+
+[rest of the README remains the same...]
 
 - Send verification codes via SMS, WhatsApp, or Telegram
 - Send custom messages with approved sender IDs
