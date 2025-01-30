@@ -1,65 +1,137 @@
 <?php
-
+/**
+ * Otpiq - A Laravel package for OTP verification services
+ * پاکێجی لاراڤێڵ بۆ خزمەتگوزاریەکانی سەلماندنی OTP
+ *
+ * @package Rstacode\Otpiq
+ */
 namespace Rstacode\Otpiq;
 
 use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Cache;
+use GuzzleHttp\Exception\GuzzleException;
+use Rstacode\Otpiq\Exceptions\OtpiqException;
 
 class Otpiq
 {
+    /**
+     * HTTP client instance
+     * نموونەی کلاینتی HTTP
+     */
     protected $client;
-    protected $config;
-    protected $baseUrl = 'https://api.otpiq.com/api';
 
-    public function __construct(array $config)
+    /**
+     * Package configuration
+     * ڕێکخستنەکانی پاکێج
+     */
+    protected $config;
+
+    /**
+     * API base URL
+     * URL-ی سەرەکی API
+     */
+    protected $baseUrl;
+
+    /**
+     * Initialize the Otpiq instance
+     * دەستپێکردنی نموونەی Otpiq
+     *
+     * @param array $config Configuration array ڕێکخستنەکان
+     * @param Client|null $client Optional HTTP client نموونەی کلاینتی HTTP (ئارەزوومەندانە)
+     */
+    public function __construct(array $config, ?Client $client = null)
     {
-        $this->config = $config;
-        $this->client = new Client([
+        $this->validateConfig($config);
+        $this->config  = $config;
+        $this->baseUrl = 'https://api.otpiq.com/api';
+        $this->client  = $client ?? $this->initializeClient();
+    }
+
+    /**
+     * Initialize HTTP client
+     * دەستپێکردنی کلاینتی HTTP
+     *
+     * @return Client
+     */
+    protected function initializeClient(): Client
+    {
+        return new Client([
             'base_uri' => $this->baseUrl,
-            'headers' => [
-                'Authorization' => 'Bearer ' . $config['api_key'],
-                'Content-Type' => 'application/json',
-            ]
+            'headers'  => [
+                'Authorization' => 'Bearer ' . $this->config['api_key'],
+                'Content-Type'  => 'application/json',
+            ],
         ]);
+    }
+
+    /**
+     * Get project information and remaining credits
+     * وەرگرتنی زانیاری پڕۆژە و کرێدیتی ماوە
+     *
+     * @return object
+     * @throws OtpiqException
+     */
+    public function getProjectInfo()
+    {
+        try {
+            $response = $this->client->request('GET', '/info');
+            return json_decode($response->getBody()->getContents());
+        } catch (GuzzleException $e) {
+            throw new OtpiqException($e->getMessage());
+        }
     }
 
     /**
      * Send OTP or custom message
+     * ناردنی OTP یان نامەی تایبەت
+     *
+     * @param string $phoneNumber Phone number ژمارەی مۆبایل
+     * @param string $type Message type (verification/custom) جۆری نامە
+     * @param array $options Additional options بژاردەی زیادە
+     * @return object
+     * @throws OtpiqException
      */
-    public function send(string $phoneNumber, string $type = 'verification', string $message = null)
+    public function send(string $phoneNumber, string $type = 'verification', array $options = [])
     {
-        $response = $this->client->post('/sms', [
-            'json' => [
-                'phoneNumber' => $phoneNumber,
-                'smsType' => $type,
-                'customMessage' => $message,
-            ]
-        ]);
+        $this->validatePhoneNumber($phoneNumber);
 
-        return json_decode($response->getBody(), true);
+        try {
+            $response = $this->client->request('POST', '/sms', [
+                'json' => array_merge([
+                    'phoneNumber' => $phoneNumber,
+                    'smsType'     => $type,
+                ], $options),
+            ]);
+            return json_decode($response->getBody()->getContents());
+        } catch (GuzzleException $e) {
+            throw new OtpiqException($e->getMessage());
+        }
     }
 
     /**
-     * Verify OTP code
+     * Validate phone number format
+     * دڵنیابوون لە فۆرماتی ژمارەی مۆبایل
+     *
+     * @param string $phoneNumber
+     * @throws OtpiqException
      */
-    public function verify(string $phoneNumber, string $code)
+    protected function validatePhoneNumber(string $phoneNumber): void
     {
-        $response = $this->client->post('/sms/verify', [
-            'json' => [
-                'phoneNumber' => $phoneNumber,
-                'verificationCode' => $code,
-            ]
-        ]);
-
-        return json_decode($response->getBody(), true);
+        if (! preg_match('/^[0-9]{10,}$/', $phoneNumber)) {
+            throw new OtpiqException('Invalid phone number format');
+        }
     }
 
     /**
-     * Track SMS status
+     * Validate configuration
+     * دڵنیابوون لە ڕێکخستنەکان
+     *
+     * @param array $config
+     * @throws OtpiqException
      */
-    public function track(string $smsId)
+    protected function validateConfig(array $config): void
     {
-        $response = $this->client->get("/sms/track/{$smsId}");
-        return json_decode($response->getBody(), true);
+        if (empty($config['api_key'])) {
+            throw new OtpiqException('API key is required');
+        }
     }
 }

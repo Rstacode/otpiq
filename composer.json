@@ -8,6 +8,11 @@
             "Rstacode\\Otpiq\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Rstacode\\Otpiq\\Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Rstacode",
