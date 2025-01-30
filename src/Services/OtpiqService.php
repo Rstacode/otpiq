@@ -12,7 +12,7 @@ class OtpiqService
 {
     protected Client $client;
     protected string $apiKey;
-    protected string $baseUrl = 'https://api.otpiq.com/api';
+    protected string $baseUrl = 'https://api.otpiq.com';
 
     public function __construct(?Client $client = null)
     {
@@ -72,7 +72,7 @@ class OtpiqService
     public function getProjectInfo(): ProjectInfo
     {
         try {
-            $response = $this->client->get('info');
+            $response = $this->client->get('/api/info');
             $data     = $this->handleResponse($response);
 
             return ProjectInfo::fromArray($data);
@@ -87,7 +87,7 @@ class OtpiqService
     public function sendSms(SmsData $smsData): array
     {
         try {
-            $response = $this->client->post('sms', [
+            $response = $this->client->post('/api/sms', [
                 'json' => $smsData->toArray(),
             ]);
 
@@ -103,7 +103,7 @@ class OtpiqService
     public function getSenderIds(): array
     {
         try {
-            $response = $this->client->get('sender-ids');
+            $response = $this->client->get('/api/sender-ids');
             return $this->handleResponse($response);
         } catch (GuzzleException $e) {
             if ($e->getResponse() && $e->getResponse()->getStatusCode() === 401) {
@@ -116,7 +116,7 @@ class OtpiqService
     public function trackSms(string $smsId): array
     {
         try {
-            $response = $this->client->get("sms/track/{$smsId}");
+            $response = $this->client->get("/api/sms/track/{$smsId}");
             return $this->handleResponse($response);
         } catch (GuzzleException $e) {
             if ($e->getResponse() && $e->getResponse()->getStatusCode() === 401) {
