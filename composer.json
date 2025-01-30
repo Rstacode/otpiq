@@ -1,0 +1,38 @@
+{
+    "name": "rstacode/otpiq",
+    "description": "A Laravel package for handling OTP verification, The most reliable SMS & WhatsApp & Telegram verification platform for your business in Iraq",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Rstacode\\Otpiq\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Rstacode",
+            "email": "rstacode@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "illuminate/support": "^10.0|^11.0",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0",
+        "phpunit/phpunit": "^10.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Rstacode\\Otpiq\\OtpiqServiceProvider"
+            ],
+            "aliases": {
+                "Otpiq": "Rstacode\\Otpiq\\Facades\\Otpiq"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
