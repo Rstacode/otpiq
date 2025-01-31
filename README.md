@@ -240,7 +240,7 @@ If you discover any security-related issues, please email [rstacode@gmail.com](m
 
 ## 🤝 Contributing
 
-Thank you for considering contributing to the OTPIQ Laravel package! Please review our [contribution guidelines](CONTRIBUTING.md) before submitting a pull request.
+Thank you for considering contributing to the OTPIQ Laravel package!
 
 1. Fork the repository.
 2. Create your feature branch (`git checkout -b feature/amazing-feature`).
