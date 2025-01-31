@@ -24,7 +24,10 @@
     "autoload": {
         "psr-4": {
             "Rstacode\\Otpiq\\": "src/"
-        }
+        },
+        "files": [
+            "config/otpiq.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
