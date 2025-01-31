@@ -2,34 +2,22 @@
 namespace Rstacode\Otpiq;
 
 use Illuminate\Support\ServiceProvider;
-use Rstacode\Otpiq\Services\OtpiqService;
 
 class OtpiqServiceProvider extends ServiceProvider
 {
-    public function register(): void
+    public function register()
     {
-        // Register config
-        $this->mergeConfigFrom(
-            __DIR__ . '/Config/otpiq.php', 'otpiq'
-        );
+        $this->mergeConfigFrom(__DIR__ . '/../../config/otpiq.php', 'otpiq');
 
-        // Register the main service
         $this->app->singleton(OtpiqService::class, function ($app) {
-            return new OtpiqService();
-        });
-
-        // Register the facade accessor
-        $this->app->bind('otpiq', function ($app) {
-            return $app->make(OtpiqService::class);
+            return new OtpiqService(config('otpiq.api_key'), config('otpiq.base_url'));
         });
     }
 
-    public function boot(): void
+    public function boot()
     {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/Config/otpiq.php' => config_path('otpiq.php'),
-            ], 'otpiq-config');
-        }
+        $this->publishes([
+            __DIR__ . '/../../config/otpiq.php' => config_path('otpiq.php'),
+        ], 'otpiq-config');
     }
 }
