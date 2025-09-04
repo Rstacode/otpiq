@@ -1,4 +1,5 @@
 <?php
+
 namespace Rstacode\Otpiq\Facades;
 
 use Illuminate\Support\Facades\Facade;

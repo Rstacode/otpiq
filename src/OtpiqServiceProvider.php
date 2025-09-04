@@ -1,4 +1,5 @@
 <?php
+
 namespace Rstacode\Otpiq;
 
 use Illuminate\Support\ServiceProvider;
@@ -8,10 +9,15 @@ class OtpiqServiceProvider extends ServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/otpiq.php', 'otpiq'
+            __DIR__ . '/../config/otpiq.php',
+            'otpiq'
         );
+
         $this->app->singleton(OtpiqService::class, function ($app) {
-            return new OtpiqService(config('otpiq.api_key'), config('otpiq.base_url'));
+            return new OtpiqService(
+                config('otpiq.api_key'),
+                config('otpiq.base_url')
+            );
         });
     }
 

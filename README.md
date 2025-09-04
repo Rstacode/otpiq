@@ -13,20 +13,23 @@ A Laravel package for seamless integration with the OTPIQ SMS service API. Send 
 ## ✨ Features
 
 - **Multi-Channel Messaging**: Send messages via SMS, WhatsApp, or Telegram.
-- **Verification Codes**: Easily send OTPs and verification codes.
+- **Verification Codes**: Send OTP verification codes easily.
 - **Custom Messages**: Send personalized messages with approved sender IDs.
-- **Delivery Tracking**: Track the status of sent messages in real-time.
+- **Delivery Tracking**: Track the status of sent messages with detailed channel flow.
 - **Credit Management**: Monitor your remaining credits and usage.
 - **Sender ID Management**: Retrieve and manage your approved sender IDs.
-- **Laravel 10+ Support**: Fully compatible with Laravel 10 and above.
-- **PHP 8.1+ Support**: Built for modern PHP applications.
+- **Webhooks Support**: Real-time notifications for message status updates.
+- **Error Handling**: Comprehensive exception handling.
+- **Laravel 10-12 Support**: Fully compatible with Laravel 10, 11, and 12.
+- **PHP 8.1-8.4 Support**: Built for modern PHP applications.
 
 ---
 
 ## 🛠️ Requirements
 
-- PHP 8.1 or higher
-- Laravel 10 or higher
+- PHP 8.1, 8.2, 8.3, or 8.4
+- Laravel 10, 11, or 12
+- Guzzle HTTP 7.0+
 
 ---
 
@@ -72,19 +75,20 @@ return [
 use Rstacode\Otpiq\Facades\Otpiq;
 
 $response = Otpiq::sendSms([
-    'phoneNumber' => '9647501234567',
+    'phoneNumber' => '964750123456',
     'smsType' => 'verification',
     'verificationCode' => '123456',
-    'provider' => 'auto' // Optional (default: auto)
+    'provider' => 'whatsapp-telegram-sms' // Optional (recommended)
 ]);
 
 // Response:
 // [
 //     'message' => 'SMS task created successfully',
-//     'smsId' => 'sms-1234567890',
-//     'remainingCredit' => 920,
-//     'provider' => 'telegram',
-//     'status' => 'pending'
+//     'smsId' => 'sms-1234567890abcdef123456',
+//     'remainingCredit' => 14800,
+//     'cost' => 200,
+//     'canCover' => true,
+//     'paymentType' => 'prepaid'
 // ]
 ```
 
@@ -92,12 +96,14 @@ $response = Otpiq::sendSms([
 
 ```php
 $response = Otpiq::sendSms([
-    'phoneNumber' => '9647501234567',
+    'phoneNumber' => '964750123456',
     'smsType' => 'custom',
     'customMessage' => 'Special offer! 20% discount today!',
-    'senderId' => 'MyStore',
+    'senderId' => 'OTPIQ',
     'provider' => 'sms' // Required for custom messages
 ]);
+
+// Response: Same as verification code response above
 ```
 
 ### Track SMS Status
@@ -107,10 +113,23 @@ $status = Otpiq::trackSms('sms-1234567890');
 
 // Response:
 // [
-//     'status' => 'delivered',
-//     'phoneNumber' => '9647501234567',
-//     'smsId' => 'sms-1234567890',
-//     'cost' => 80
+//     'smsId' => 'sms-1234567890abcdef123456',
+//     'phoneNumber' => '964750123456',
+//     'status' => 'sent',
+//     'cost' => 200,
+//     'isFinalStatus' => false,
+//     'lastChannel' => 'whatsapp',
+//     'channelFlow' => [
+//         [
+//             'channel' => 'whatsapp',
+//             'tried' => true,
+//             'success' => true
+//         ],
+//         [
+//             'channel' => 'sms',
+//             'tried' => false
+//         ]
+//     ]
 // ]
 ```
 
@@ -119,9 +138,15 @@ $status = Otpiq::trackSms('sms-1234567890');
 ```php
 $projectInfo = Otpiq::getProjectInfo();
 
+// Response:
+// [
+//     'projectName' => 'My SMS Project',
+//     'credit' => 15000
+// ]
+
 // Access project info:
-echo $projectInfo['projectName']; // "My Project"
-echo $projectInfo['credit']; // 1000
+echo $projectInfo['projectName']; // "My SMS Project"
+echo $projectInfo['credit']; // 15000
 ```
 
 ### Get Sender IDs
@@ -131,12 +156,18 @@ $senderIds = Otpiq::getSenderIds();
 
 // Response:
 // [
-//     'senderIds' => [
+//     'success' => true,
+//     'data' => [
 //         [
-//             'id' => 'sender-123',
-//             'senderId' => 'MyBrand',
+//             '_id' => '507f1f77bcf86cd799439011',
+//             'senderId' => 'OTPIQ',
 //             'status' => 'accepted',
-//             'createdAt' => '2024-01-01T00:00:00.000Z'
+//             'pricePerSms' => [
+//                 'korekTelecom' => 80,
+//                 'asiaCell' => 80,
+//                 'zainIraq' => 80,
+//                 'others' => 100
+//             ]
 //         ]
 //     ]
 // ]
@@ -173,38 +204,224 @@ try {
 
 ## 🔌 Available Providers
 
-When sending messages, you can specify the provider:
+OTPIQ offers 6 provider options including smart fallback routes:
 
-- `auto` (recommended): System automatically chooses the best available provider.
-- `sms`: Send via SMS.
-- `whatsapp`: Send via WhatsApp.
-- `telegram`: Send via Telegram.
+- `whatsapp-telegram-sms` (recommended): Try WhatsApp → Telegram → SMS (maximum delivery success)
+- `whatsapp-sms`: Try WhatsApp first, fallback to SMS
+- `telegram-sms`: Try Telegram first, fallback to SMS
+- `sms`: SMS only
+- `whatsapp`: WhatsApp only
+- `telegram`: Telegram only
 
-**Note**: When `smsType` is `custom`, the provider is automatically set to `sms`.
+**Note**: For custom messages, the provider is typically set to `sms` since sender IDs are mainly supported via SMS.
 
 ---
 
-## 🧪 Testing
+## 🔗 Webhooks
 
-Run the test suite:
+OTPIQ provides real-time delivery status notifications via webhooks. When you configure webhooks, you'll receive instant updates about message delivery status directly to your server.
 
-```bash
-composer test
-```
+### How to Configure Webhooks
 
-Run specific tests:
-
-```bash
-./vendor/bin/phpunit tests/Unit/OtpiqServiceTest.php
-```
-
-Mock API responses in tests:
+Include a `deliveryReport` object in your SMS request:
 
 ```php
-Otpiq::fake([
-    'info' => ['projectName' => 'Test Project', 'credit' => 5000],
-    'sms' => ['smsId' => 'test-123', 'status' => 'queued']
+$response = Otpiq::sendSms([
+    'phoneNumber' => '964750123456',
+    'smsType' => 'verification',
+    'verificationCode' => '123456',
+    'deliveryReport' => [
+        'webhookUrl' => 'https://your-app.com/webhooks/sms-status',
+        'deliveryReportType' => 'all', // 'all' or 'final'
+        'webhookSecret' => 'your_secret_123' // Optional
+    ]
 ]);
+```
+
+### Webhook Configuration Fields
+
+| Field                | Type   | Required | Description                                              |
+| -------------------- | ------ | -------- | -------------------------------------------------------- |
+| `webhookUrl`         | string | Yes      | HTTPS URL where status updates are sent                  |
+| `deliveryReportType` | string | No       | `"all"` for all updates, `"final"` for final status only |
+| `webhookSecret`      | string | No       | Secret key for webhook authentication                    |
+
+### Webhook Payload Structure
+
+Each webhook request contains a JSON payload with these fields:
+
+**Required Fields:**
+
+- `smsId`: Unique message identifier
+- `deliveryReportType`: Your configured report type
+- `isFinal`: Whether this is the final status
+- `channel`: Messaging channel (sms, whatsapp, telegram)
+- `status`: Delivery status (sent, delivered, failed)
+
+**Optional Fields:**
+
+- `reason`: Failure reason (only when status is 'failed')
+- `senderId`: Sender ID used (only for SMS with custom sender IDs)
+
+### Delivery Status Flow
+
+**SMS Messages:**
+
+- `sent` → Message accepted by carrier
+- `delivered` → Message confirmed delivered to recipient
+- `failed` → Message could not be delivered
+
+**WhatsApp Messages:**
+
+- `sent` → Message sent to WhatsApp servers
+- `delivered` → Message delivered to recipient's device
+- `failed` → Message could not be sent or delivered
+
+**Telegram Messages:**
+
+- `sent` → Message sent to Telegram servers
+- `delivered` → Message delivered to recipient
+- `failed` → Message could not be sent
+
+### Webhook Examples
+
+#### Example 1: SMS with Custom Sender ID
+
+**Request:**
+
+```php
+$response = Otpiq::sendSms([
+    'phoneNumber' => '964750123456',
+    'smsType' => 'custom',
+    'customMessage' => 'Your order has been confirmed!',
+    'senderId' => 'OTPIQ',
+    'deliveryReport' => [
+        'webhookUrl' => 'https://your-app.com/webhooks/sms-status',
+        'deliveryReportType' => 'all',
+        'webhookSecret' => 'your_secret_123'
+    ]
+]);
+```
+
+**Webhook Payloads Received:**
+
+Sent Status:
+
+```json
+{
+  "smsId": "sms_1234567890abcdef",
+  "deliveryReportType": "all",
+  "isFinal": false,
+  "channel": "sms",
+  "status": "sent",
+  "senderId": "OTPIQ"
+}
+```
+
+Delivered Status:
+
+```json
+{
+  "smsId": "sms_1234567890abcdef",
+  "deliveryReportType": "all",
+  "isFinal": true,
+  "channel": "sms",
+  "status": "delivered",
+  "senderId": "OTPIQ"
+}
+```
+
+#### Example 2: WhatsApp with Final-Only Reports
+
+**Request:**
+
+```php
+$response = Otpiq::sendSms([
+    'phoneNumber' => '964750123456',
+    'smsType' => 'verification',
+    'verificationCode' => '123456',
+    'provider' => 'whatsapp',
+    'deliveryReport' => [
+        'webhookUrl' => 'https://your-app.com/webhooks/whatsapp-status',
+        'deliveryReportType' => 'final'
+    ]
+]);
+```
+
+**Webhook Payload (Final Status Only):**
+
+```json
+{
+  "smsId": "sms_1234567890abcdef",
+  "deliveryReportType": "final",
+  "isFinal": true,
+  "channel": "whatsapp",
+  "status": "delivered"
+}
+```
+
+#### Example 3: Failed Message
+
+**Request:**
+
+```php
+$response = Otpiq::sendSms([
+    'phoneNumber' => '964750123456',
+    'smsType' => 'custom',
+    'customMessage' => 'Your order has been confirmed!',
+    'senderId' => 'OTPIQ',
+    'deliveryReport' => [
+        'webhookUrl' => 'https://your-app.com/webhooks/sms-status',
+        'deliveryReportType' => 'final'
+    ]
+]);
+```
+
+**Webhook Payload (Failure):**
+
+```json
+{
+  "smsId": "sms_abcdef1234567890",
+  "deliveryReportType": "final",
+  "isFinal": true,
+  "channel": "sms",
+  "status": "failed",
+  "reason": "Carrier rejected the message",
+  "senderId": "OTPIQ"
+}
+```
+
+### Laravel Event Integration
+
+For handling webhook events in Laravel:
+
+```php
+// In routes/web.php
+Route::post('/webhooks/sms-status', function (Request $request) {
+    $payload = $request->all();
+
+    // Verify webhook signature (for security)
+    // $signature = $request->header('X-OTPIQ-Signature');
+
+    switch ($payload['status']) {
+        case 'delivered':
+            // Handle delivered event
+            Log::info("SMS {$payload['smsId']} delivered via {$payload['channel']}");
+            break;
+
+        case 'failed':
+            // Handle failed event
+            Log::error("SMS {$payload['smsId']} failed: {$payload['reason']}");
+            break;
+
+        case 'sent':
+            // Handle sent event
+            Log::info("SMS {$payload['smsId']} sent via {$payload['channel']}");
+            break;
+    }
+
+    return response()->json(['status' => 'ok']);
+});
 ```
 
 ---
