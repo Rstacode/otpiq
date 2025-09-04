@@ -1,11 +1,4 @@
-![Image](https://github.com/user-attachments/assets/6bae8406-3f7b-4dc9-bbaf-279f2be0b63e)
-
 # OTPIQ Laravel Package
-
-![Packagist License](https://img.shields.io/packagist/l/rstacode/otpiq)
-![Packagist Version](https://img.shields.io/packagist/v/rstacode/otpiq)
-![PHP Version](https://img.shields.io/packagist/php-v/rstacode/otpiq)
-![Laravel Version](https://img.shields.io/badge/Laravel-10.x-red.svg)
 
 A Laravel package for seamless integration with the OTPIQ SMS service API. Send verification codes and custom messages via SMS, WhatsApp, or Telegram with ease.
 
@@ -14,8 +7,6 @@ A Laravel package for seamless integration with the OTPIQ SMS service API. Send 
 ## 🔗 Quick Links
 
 - **[Official Website](https://otpiq.com/)**
-- **[Live Demo](https://otpiq.rstacode.dev)**
-- **[Demo Source Code](https://github.com/Rstacode/otpiq_demo)**
 
 ---
 
@@ -35,8 +26,7 @@ A Laravel package for seamless integration with the OTPIQ SMS service API. Send 
 ## 🛠️ Requirements
 
 - PHP 8.1 or higher
-- Laravel 10.x or higher
-- Composer
+- Laravel 10 or higher
 
 ---
 
