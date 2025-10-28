@@ -12,18 +12,21 @@ class OtpiqService
     protected string $apiKey;
     protected string $baseUrl;
 
-    public function __construct(string $apiKey, string $baseUrl = "https://api.otpiq.com/api/")
+    public function __construct(string $apiKey, string $baseUrl = 'https://api.otpiq.com/api/')
     {
         $this->apiKey = $apiKey;
-        $this->baseUrl = $baseUrl;
+        $this->baseUrl = rtrim($baseUrl, '/') . '/';
         $this->client = new Client([
             'base_uri' => $this->baseUrl,
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
             ],
+            'timeout' => config('otpiq.timeout', 30),
         ]);
     }
+
     public function getProjectInfo(): array
     {
         return $this->request('GET', 'info');
@@ -47,15 +50,10 @@ class OtpiqService
     protected function request(string $method, string $uri, array $data = []): array
     {
         try {
-            $options = [];
-
-            if ($method === 'POST' && !empty($data)) {
-                $options['json'] = $data;
-            }
-
+            $options = $method === 'POST' && !empty($data) ? ['json' => $data] : [];
             $response = $this->client->request($method, $uri, $options);
 
-            return json_decode($response->getBody(), true);
+            return json_decode($response->getBody()->getContents(), true) ?? [];
         } catch (GuzzleException $e) {
             throw OtpiqApiException::fromGuzzleException($e);
         }

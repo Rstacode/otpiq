@@ -2,15 +2,22 @@
 
 namespace Rstacode\Otpiq\Exceptions;
 
+use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use Throwable;
 
-class OtpiqApiException extends \Exception
+class OtpiqApiException extends Exception
 {
     protected array $errors = [];
     protected ?array $responseData = null;
 
-    public function __construct(string $message = "", int $code = 0, ?\Throwable $previous = null, array $errors = [], array $responseData = null)
-    {
+    public function __construct(
+        string $message = '',
+        int $code = 0,
+        ?Throwable $previous = null,
+        array $errors = [],
+        ?array $responseData = null
+    ) {
         parent::__construct($message, $code, $previous);
         $this->errors = $errors;
         $this->responseData = $responseData;
@@ -19,81 +26,77 @@ class OtpiqApiException extends \Exception
     public static function fromGuzzleException(GuzzleException $e): self
     {
         $message = $e->getMessage();
-        $code = $e->getCode();
+        $code = 0;
         $errors = [];
         $responseData = null;
 
         if ($e->hasResponse()) {
             $response = $e->getResponse();
-            $body = json_decode($response->getBody(), true);
+            $body = json_decode($response->getBody()->getContents(), true) ?? [];
             $responseData = $body;
-
-            $message = $body['message'] ?? $message;
+            $message = $body['message'] ?? $body['error'] ?? $message;
             $code = $response->getStatusCode();
             $errors = $body['errors'] ?? [];
-
-            // Handle validation errors
-            if (isset($body['errors']) && is_array($body['errors'])) {
-                $errors = $body['errors'];
-            }
         }
 
         return new self("OTPIQ API Error: {$message}", $code, $e, $errors, $responseData);
     }
 
-    /**
-     * Get validation errors
-     */
     public function getErrors(): array
     {
         return $this->errors;
     }
 
-    /**
-     * Check if exception has validation errors
-     */
     public function hasErrors(): bool
     {
         return !empty($this->errors);
     }
 
-    /**
-     * Get the full response data
-     */
     public function getResponseData(): ?array
     {
         return $this->responseData;
     }
 
-    /**
-     * Check if the error is related to insufficient credit
-     */
     public function isCreditError(): bool
     {
-        return $this->getCode() === 402 ||
-            str_contains(strtolower($this->getMessage()), 'credit') ||
-            str_contains(strtolower($this->getMessage()), 'insufficient');
+        $message = strtolower($this->getMessage());
+        return str_contains($message, 'credit') ||
+            str_contains($message, 'insufficient') ||
+            isset($this->responseData['yourCredit']);
     }
 
-    /**
-     * Check if the error is related to authentication
-     */
     public function isAuthError(): bool
     {
-        return in_array($this->getCode(), [401, 403]);
+        return $this->getCode() === 401;
     }
 
-    /**
-     * Check if the error is a validation error
-     */
     public function isValidationError(): bool
     {
-        return $this->getCode() === 422 && $this->hasErrors();
+        return $this->getCode() === 400 && $this->hasErrors();
     }
 
-    /**
-     * Get first error message if available
-     */
+    public function isRateLimitError(): bool
+    {
+        return $this->getCode() === 429;
+    }
+
+    public function isTrialModeError(): bool
+    {
+        $message = strtolower($this->getMessage());
+        return str_contains($message, 'trial mode');
+    }
+
+    public function isSpendingThresholdError(): bool
+    {
+        return isset($this->responseData['spendingThreshold']);
+    }
+
+    public function isSenderIdError(): bool
+    {
+        $message = strtolower($this->getMessage());
+        return str_contains($message, 'senderid');
+    }
+
     public function getFirstError(): ?string
     {
         if (!$this->hasErrors()) {
@@ -102,5 +105,22 @@ class OtpiqApiException extends \Exception
 
         $firstError = reset($this->errors);
         return is_array($firstError) ? reset($firstError) : $firstError;
+    }
+
+    public function getRemainingCredit(): ?int
+    {
+        return $this->responseData['yourCredit'] ??
+            $this->responseData['remainingCredit'] ??
+            null;
+    }
+
+    public function getRequiredCredit(): ?int
+    {
+        return $this->responseData['requiredCredit'] ?? null;
+    }
+
+    public function getRateLimitWaitMinutes(): ?int
+    {
+        return $this->responseData['waitMinutes'] ?? null;
     }
 }
